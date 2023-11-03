@@ -1,8 +1,10 @@
+import Gallery from "./pages/Home/Gallery";
+
 function App() {
   return (
-    <>
-      <h1>home</h1>
-    </>
+    <div className="p-16">
+      <Gallery />
+    </div>
   );
 }
 
