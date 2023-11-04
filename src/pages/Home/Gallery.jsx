@@ -25,6 +25,7 @@ import {
 } from "@dnd-kit/sortable";
 import Images from "./Images";
 import { Photo } from "./Photo";
+import Loading from "../../components/Loading";
 
 const Gallery = () => {
   const [images, setImages] = useState(null);
@@ -157,77 +158,83 @@ const Gallery = () => {
   };
 
   return (
-    <div>
-      <form className="flex justify-center gap-4">
-        {/* image upload input field  */}
-        <input
-          type="file"
-          onChange={(event) => {
-            setImages(event.target.files[0]);
-          }}
-          className="border flex items-center cursor-pointer"
-          id="imageUploadInput"
-        />
+    <>
+      <div>
+        <form className="md:flex justify-center gap-4 space-y-3 md:space-y-0 mb-12">
+          {/* image upload input field  */}
+          <input
+            className="relative m-0 block cursor-pointer rounded border border-solid border-neutral-300 bg-clip-padding px-3 py-[0.32rem] font-normal leading-[2.15] text-neutral-700 transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:cursor-pointer file:overflow-hidden file:rounded-none file:border-0 file:border-solid file:border-inherit file:bg-neutral-100 file:px-3 file:py-[0.32rem] file:text-neutral-700 file:transition file:duration-150 file:ease-in-out file:[border-inline-end-width:1px] file:[margin-inline-end:0.75rem] hover:file:bg-gray-700 focus:border-primary focus:text-neutral-700 focus:shadow-te-primary focus:outline-none dark:border-neutral-600 dark:text-neutral-200 dark:file:bg-blue-700 dark:file:text-neutral-100 dark:focus:border-primary"
+            id="formFileLg"
+            type="file"
+            onChange={(event) => {
+              setImages(event.target.files[0]);
+            }}
+          />
 
-        {error && <div className="error">{error}</div>}
-        <button
-          onClick={handleUpload}
-          className="flex gap-2 items-center bg-blue-500 px-3 py-2 rounded-md text-xl transition-all shadow-md hover-bg-blue-600 duration-300 text-white"
-        >
-          <ImPlus></ImPlus> Import Image
-        </button>
-      </form>
-      {/* delete btn  */}
-      {selectedImage.length > 0 && (
-        <div className="flex gap-11 justify-between">
+          {error && <div className="error">{error}</div>}
           <button
-            onClick={handleImageDelete}
-            className="bg-red-500 px-3 py-2 rounded-md text-xl transition-all shadow-md hover-bg-red-600 duration-300 text-white"
+            onClick={handleUpload}
+            className="flex gap-2 items-center bg-blue-500 px-3 py-2 rounded-md text-xl transition-all shadow-md hover-bg-blue-600 duration-300 text-white"
           >
-            Delete Image
+            <ImPlus></ImPlus> Import Image
           </button>
-          <p className="bg-gray-100 px-3 py-2 rounded-md  w-fit flex gap-3 text-base font-semibold items-center ">
-            <ImCheckboxChecked></ImCheckboxChecked> {selectedImage.length}{" "}
-            Selected
-          </p>
-        </div>
-      )}
-      {/* gallery container  */}
-      <div className="mt-8 md:grid grid-cols-4 gap-5">
-        {/* dnd context  */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragCancel={handleDragCancel}
-        >
-          {/* sortable context for sortable images  */}
-          <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
-            {imageUrls.map((image, index) => (
-              // all images rendering here
-              <Images
-                key={image}
-                id={image}
-                index={index}
-                image={image}
-                selectedImage={selectedImage}
-                setHoveredImageIndex={setHoveredImageIndex}
-                hoveredImageIndex={hoveredImageIndex}
-                handleImageSelection={handleImageSelection}
-              ></Images>
-            ))}
-          </SortableContext>
+        </form>
+        {/* delete btn  */}
+        {selectedImage.length > 0 && (
+          <div className="md:flex gap-11 justify-between max-lg:mt-10 space-y-3 md:space-y-0">
+            <button
+              onClick={handleImageDelete}
+              className="bg-red-500 px-3 py-2  rounded-md text-xl transition-all shadow-md hover-bg-red-600 duration-300 text-white"
+            >
+              Delete Image
+            </button>
+            <p className="bg-gray-100 px-3 py-2 rounded-md  w-fit flex gap-3 text-base font-semibold items-center ">
+              <ImCheckboxChecked></ImCheckboxChecked> {selectedImage.length}{" "}
+              Selected
+            </p>
+          </div>
+        )}
+        {/* gallery container  */}
+        {imageUrls.length === 0 ? (
+          <Loading />
+        ) : (
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xxl:grid-cols- gap-8 ">
+            {/* dnd context  */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
+            >
+              {/* sortable context for sortable images  */}
+              <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
+                {imageUrls.map((image, index) => (
+                  // all images rendering here
+                  <Images
+                    key={image}
+                    id={image}
+                    index={index}
+                    image={image}
+                    selectedImage={selectedImage}
+                    setHoveredImageIndex={setHoveredImageIndex}
+                    hoveredImageIndex={hoveredImageIndex}
+                    handleImageSelection={handleImageSelection}
+                  ></Images>
+                ))}
+              </SortableContext>
 
-          {/* drag overlay when dragging  */}
-          <DragOverlay adjustScale={true}>
-            {activeId ? (
-              <Photo url={activeId} index={imageUrls.indexOf(activeId)} />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+              {/* drag overlay when dragging  */}
+              <DragOverlay adjustScale={true}>
+                {activeId ? (
+                  <Photo url={activeId} index={imageUrls.indexOf(activeId)} />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 };
 

@@ -7,13 +7,15 @@ export const Photo = forwardRef(
     const inlineStyles = {
       opacity: faded ? "0.2" : "2",
       transformOrigin: "0 0",
-      height: index === 0 ? 410 : 400,
+      height: index === 0 ? 410 : 288,
       gridRowStart: index === 0 ? "span 2" : null,
       gridColumnStart: index === 0 ? "span 2" : null,
       backgroundImage: `url("${url}")`,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      backgroundColor: "grey",
+      backgroundColor: "white",
+      border: "2px",
+      borderRadius: "8px",
       ...style,
     };
 
