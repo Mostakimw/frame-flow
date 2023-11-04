@@ -58,7 +58,7 @@ const Images = ({
             alt="Uploaded Image"
             className="object-cover border-2 rounded-lg"
           />
-          <div className="absolute top-0 left-0 w-full h-full bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
+          <div className="absolute top-0 left-0 w-full h-full rounded-lg bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
         </div>
       </div>
     </>
