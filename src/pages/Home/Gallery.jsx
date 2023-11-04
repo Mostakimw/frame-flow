@@ -10,7 +10,14 @@ import { v4 } from "uuid";
 import { storage } from "../../firebase/config";
 import { ImCheckboxChecked, ImPlus } from "react-icons/im";
 import toast from "react-hot-toast";
-import { DndContext, DragOverlay, closestCenter } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
@@ -30,6 +37,15 @@ const Gallery = () => {
   const imageTypes = ["image/png", "image/jpeg", "image/webp"];
 
   const imagesListRef = ref(storage, "images/");
+
+  // stop propagation when try to handling action in Draggable area
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   //   uploading image handler
   const handleUpload = (e) => {
@@ -112,6 +128,7 @@ const Gallery = () => {
       });
     });
   }, []);
+  // cannot use dependencies because of infinite loop
 
   // handle drag starting
   const handleDragStart = (event) => {
@@ -179,6 +196,7 @@ const Gallery = () => {
       <div className="mt-8 md:grid grid-cols-4 gap-5">
         {/* dnd context  */}
         <DndContext
+          sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
