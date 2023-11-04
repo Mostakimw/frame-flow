@@ -8,7 +8,16 @@ import {
 } from "firebase/storage";
 import { v4 } from "uuid";
 import { storage } from "../../firebase/config";
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import { ImCheckboxChecked, ImPlus } from "react-icons/im";
+import toast from "react-hot-toast";
+import { DndContext, DragOverlay, closestCenter } from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import Images from "./Images";
+import { Photo } from "./Photo";
 
 const Gallery = () => {
   const [images, setImages] = useState(null);
@@ -16,6 +25,7 @@ const Gallery = () => {
   const [imageUrls, setImageUrls] = useState([]);
   const [selectedImage, setSelectedImage] = useState([]);
   const [hoveredImageIndex, setHoveredImageIndex] = useState(null);
+  const [activeId, setActiveId] = useState(null);
 
   const imageTypes = ["image/png", "image/jpeg", "image/webp"];
 
@@ -27,14 +37,15 @@ const Gallery = () => {
 
     // check if image selected and match the image type
     if (images && imageTypes.includes(images.type)) {
-      console.log("inside if");
       setError("");
 
       // reference to the storage location
       const storageRef = ref(storage, `images/${images.name + v4()}`);
       uploadBytes(storageRef, images).then((snapshot) => {
         getDownloadURL(snapshot.ref).then((url) => {
+          toast.success("Image Uploaded");
           setImageUrls((prev) => [...prev, url]);
+          document.getElementById("imageUploadInput").value = "";
         });
       });
     }
@@ -61,6 +72,18 @@ const Gallery = () => {
         // Delete the image
         await deleteObject(imageRef);
 
+        // delete toast
+        toast.success("Deleted", {
+          style: {
+            border: "1px solid #713200",
+            padding: "16px",
+            color: "#713200",
+          },
+          iconTheme: {
+            primary: "#713200",
+            secondary: "#FFFAEE",
+          },
+        });
         // Remove the deleted image from the copy of imageUrls
         updatedImages.splice(index, 1);
       } catch (error) {
@@ -90,113 +113,101 @@ const Gallery = () => {
     });
   }, []);
 
-  // Drag-and-drop handler
-  const handleDragEnd = (result) => {
-    if (!result.destination) {
-      return;
+  // handle drag starting
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
+  };
+
+  // handle drag ending
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setImageUrls((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
     }
 
-    const reorderedImages = Array.from(imageUrls);
-    const [reorderedItem] = reorderedImages.splice(result.source.index, 1);
-    reorderedImages.splice(result.destination.index, 0, reorderedItem);
+    setActiveId(null);
+  };
 
-    setImageUrls(reorderedImages);
+  // handle drag cancel
+  const handleDragCancel = () => {
+    setActiveId(null);
   };
 
   return (
     <div>
-      <form>
+      <form className="flex justify-center gap-4">
         {/* image upload input field  */}
         <input
           type="file"
           onChange={(event) => {
             setImages(event.target.files[0]);
           }}
+          className="border flex items-center cursor-pointer"
+          id="imageUploadInput"
         />
+
         {error && <div className="error">{error}</div>}
         <button
           onClick={handleUpload}
-          className="bg-blue-500 px-3 py-2 rounded-md text-xl transition-all shadow-md hover:bg-blue-600 duration-300 text-white"
+          className="flex gap-2 items-center bg-blue-500 px-3 py-2 rounded-md text-xl transition-all shadow-md hover-bg-blue-600 duration-300 text-white"
         >
-          Import Image
+          <ImPlus></ImPlus> Import Image
         </button>
       </form>
       {/* delete btn  */}
-      <div className="flex gap-11">
-        <button
-          onClick={handleImageDelete}
-          className="bg-red-500 px-3 py-2 rounded-md text-xl transition-all shadow-md hover:bg-red-600 duration-300 text-white"
-        >
-          Delete Image
-        </button>
-        <p className="bg-gray-400 p-2 rounded-md text-white w-fit">
-          {selectedImage.length} Selected
-        </p>
-      </div>
+      {selectedImage.length > 0 && (
+        <div className="flex gap-11 justify-between">
+          <button
+            onClick={handleImageDelete}
+            className="bg-red-500 px-3 py-2 rounded-md text-xl transition-all shadow-md hover-bg-red-600 duration-300 text-white"
+          >
+            Delete Image
+          </button>
+          <p className="bg-gray-100 px-3 py-2 rounded-md  w-fit flex gap-3 text-base font-semibold items-center ">
+            <ImCheckboxChecked></ImCheckboxChecked> {selectedImage.length}{" "}
+            Selected
+          </p>
+        </div>
+      )}
       {/* gallery container  */}
-      <div className="mt-16">
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="droppable" direction="horizontal">
-            {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="md:grid grid-cols-4 gap-5"
-              >
-                {imageUrls.map((image, index) => (
-                  <Draggable
-                    key={index}
-                    draggableId={index.toString()}
-                    index={index}
-                  >
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        className={`relative rounded-lg ${
-                          index === 0
-                            ? "col-span-2 row-span-2 border-blue-500"
-                            : "border border-gray-300"
-                        } ${selectedImage.includes(index) && "opacity-50"}`}
-                        onMouseEnter={() => setHoveredImageIndex(index)}
-                        onMouseLeave={() => setHoveredImageIndex(null)}
-                      >
-                        {hoveredImageIndex === index && (
-                          <input
-                            type="checkbox"
-                            checked={selectedImage.includes(index)}
-                            onChange={() => handleImageSelection(index)}
-                            className="absolute top-3 left-3 z-10 w-5 h-5"
-                          />
-                        )}
-                        {selectedImage.includes(index) && (
-                          <>
-                            <input
-                              className="absolute top-3 left-3 z-10 w-5 h-5 "
-                              type="checkbox"
-                              checked={selectedImage.includes(index)}
-                              onChange={() => handleImageSelection(index)}
-                            />
-                          </>
-                        )}
-                        <div className="relative group">
-                          <img
-                            src={image}
-                            alt="Uploaded Image"
-                            className="object-cover border-2 rounded-lg"
-                          />
-                          <div className="absolute top-0 left-0 w-full h-full bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
-                        </div>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+      <div className="mt-8 md:grid grid-cols-4 gap-5">
+        {/* dnd context  */}
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          {/* sortable context for sortable images  */}
+          <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
+            {imageUrls.map((image, index) => (
+              // all images rendering here
+              <Images
+                key={image}
+                id={image}
+                index={index}
+                image={image}
+                selectedImage={selectedImage}
+                setHoveredImageIndex={setHoveredImageIndex}
+                hoveredImageIndex={hoveredImageIndex}
+                handleImageSelection={handleImageSelection}
+              ></Images>
+            ))}
+          </SortableContext>
+
+          {/* drag overlay when dragging  */}
+          <DragOverlay adjustScale={true}>
+            {activeId ? (
+              <Photo url={activeId} index={imageUrls.indexOf(activeId)} />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
     </div>
   );
